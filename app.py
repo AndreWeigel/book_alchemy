@@ -1,7 +1,7 @@
 import os
 
 from flask import Flask, render_template, request, flash, redirect, url_for
-import sqlalchemy
+from sqlalchemy import func
 from flask_sqlalchemy import SQLAlchemy
 import jinja2
 
@@ -22,12 +22,28 @@ with app.app_context():
 
 @app.route('/home', methods=['GET'])
 def home():
+    sort_by = request.args.get('sort_by', 'title')
+    search = request.args.get('search', '').strip()
 
-    #Get books
-    books = Book.query.all()
-    authors = Author.query.all()
+    query = Book.query.join(Author)
 
-    return render_template('home.html', books=books, authors=authors)
+    if search:
+        pattern = f"%{search}%"
+        query = query.filter(
+            func.lower(Book.title).like(func.lower(pattern)) |
+            func.lower(Author.name).like(func.lower(pattern))
+        )
+
+    if sort_by == 'title':
+        query = query.order_by(func.lower(Book.title))
+    elif sort_by == 'author':
+        query = query.order_by(func.lower(Author.name))
+    elif sort_by == 'year':
+        query = query.order_by(Book.year.desc())
+
+    books = query.all()
+    return render_template('home.html', books=books)
+
 
 
 @app.route('/add_author', methods=['GET', 'POST'])
@@ -94,7 +110,16 @@ def add_book():
     # Render the form for GET requests
     return render_template('add_book.html')
 
-
+@app.route('/delete/<int:book_id>', methods=['POST'])
+def delete_book(book_id):
+    book = Book.query.get(book_id)
+    if book:
+        db.session.delete(book)
+        db.session.commit()
+        flash('Book successfully deleted!')
+        return redirect(url_for('home'))
+    else:
+        flash('Error deleting post. Please try again.')
 
 
 if __name__ == '__main__':
