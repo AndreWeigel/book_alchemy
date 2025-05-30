@@ -6,9 +6,13 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
   </head>
   <body>
-
+    <h2>Blog Posts</h2>
     {% for book in books %}
     <div> <h3>{{ book.title }}</h3>
+    <p><strong>By:</strong> {{ book.author.name }}</p>
+
+    <br>
+
     </div>
     {% endfor %}
 

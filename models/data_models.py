@@ -8,6 +8,7 @@ class Author(db.Model):
     name = db.Column(db.String, nullable=False)
     date_of_birth = db.Column(db.Date)
     date_of_death = db.Column(db.Date)
+    books = db.relationship('Book', backref='author')
 
     def __repr__(self):
         return f"<Author(id={self.id}, name='{self.name}')>"

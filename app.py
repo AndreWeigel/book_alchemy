@@ -24,8 +24,10 @@ with app.app_context():
 def home():
 
     #Get books
+    books = Book.query.all()
+    authors = Author.query.all()
 
-    return render_template('home.html')
+    return render_template('home.html', books=books, authors=authors)
 
 
 @app.route('/add_author', methods=['GET', 'POST'])
