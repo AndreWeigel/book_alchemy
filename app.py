@@ -1,9 +1,11 @@
 import os
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from flask import Flask, render_template, request, flash, redirect, url_for
 from sqlalchemy import func
-from flask_sqlalchemy import SQLAlchemy
-import jinja2
 
 from datetime import datetime
 from models.data_models import db, Author, Book
@@ -12,16 +14,30 @@ from models.data_models import db, Author, Book
 app = Flask(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'data', 'library.sqlite')}"
-app.config['SECRET_KEY'] = 'your-secure-key-here'
+db_path = os.path.join(basedir, os.getenv('DATABASE_PATH'))
+
+# Configure app
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 db.init_app(app)
 
 with app.app_context():
   db.create_all()
 
+@app.route('/', methods=['GET'])
+def root():
+    """
+    Redirects root URL to the home page.
+    """
+    return redirect(url_for('home'))
+
 
 @app.route('/home', methods=['GET'])
 def home():
+    """
+    Displays the homepage with a list of books.
+    Supports sorting and search functionality.
+    """
     sort_by = request.args.get('sort_by', 'title')
     search = request.args.get('search', '').strip()
 
@@ -39,7 +55,7 @@ def home():
     elif sort_by == 'author':
         query = query.order_by(func.lower(Author.name))
     elif sort_by == 'year':
-        query = query.order_by(Book.year.desc())
+        query = query.order_by(Book.publication_year.desc())
 
     books = query.all()
     return render_template('home.html', books=books)
@@ -48,16 +64,21 @@ def home():
 
 @app.route('/add_author', methods=['GET', 'POST'])
 def add_author():
+    """
+    Handles the form for adding a new author.
+    On GET, displays the form.
+    On POST, processes and stores the author in the database.
+    """
     if request.method == 'POST':
         # Get form data
         name = request.form.get('name', '').strip()
-        birthdate_str = request.form.get('birthdate', '').strip()
+        date_of_birth_str = request.form.get('date_of_birth', '').strip()
         date_of_death_str = request.form.get('date_of_death', '').strip()
-        birthdate = datetime.strptime(birthdate_str, "%Y-%m-%d") if birthdate_str else None
+        date_of_birth = datetime.strptime(date_of_birth_str, "%Y-%m-%d") if date_of_birth_str else None
         date_of_death = datetime.strptime(date_of_death_str, "%Y-%m-%d") if date_of_death_str else None
 
         author = Author(name=name,
-                        date_of_birth=birthdate,
+                        date_of_birth=date_of_birth,
                         date_of_death=date_of_death)
 
         # Create a new blog post and add it
@@ -76,6 +97,12 @@ def add_author():
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
+    """
+    Handles the form for adding a new book.
+    On GET, displays the form.
+    On POST, processes and stores the book in the database.
+    Creates the author if not already present.
+    """
     if request.method == 'POST':
         # Get form data
         title = request.form.get('title', '').strip()
@@ -112,6 +139,9 @@ def add_book():
 
 @app.route('/delete/<int:book_id>', methods=['POST'])
 def delete_book(book_id):
+    """
+    Deletes the book with the given ID.
+    """
     book = Book.query.get(book_id)
     if book:
         db.session.delete(book)
