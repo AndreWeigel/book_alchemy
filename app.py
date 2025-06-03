@@ -1,5 +1,4 @@
 import os
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -82,13 +81,13 @@ def add_author():
                         date_of_death=date_of_death)
 
         # Create a new blog post and add it
-        if author:
+        try:
             db.session.add(author)
             db.session.commit()
-
             flash('Author successfully added!')
-        else:
-            flash('Error adding post. Please try again.')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding author: {str(e)}')
 
         return redirect(url_for('home'))
     # Render the form for GET requests
@@ -110,28 +109,30 @@ def add_book():
         isbn = request.form.get('isbn', '').strip()
         publication_year = request.form.get('publication_year', '').strip()
 
-        # Look for the author in the database
-        author = Author.query.filter_by(name=author_name).first()
+        try:
+            # Look for the author in the database
+            author = Author.query.filter_by(name=author_name).first()
 
-        # Create new author if necessary
-        if not author:
-            author = Author(name=author_name)
-            db.session.add(author)
-            db.session.commit()
+            # Create new author if necessary
+            if not author:
+                author = Author(name=author_name)
+                db.session.add(author)
+                db.session.commit()
 
-        book = Book(title=title,
-                        author_id=author.id,
-                        isbn=isbn,
-                    publication_year = int(publication_year))
+            book = Book(title=title,
+                            author_id=author.id,
+                            isbn=isbn,
+                        publication_year = int(publication_year))
 
-        # Create a new blog post and add it
-        if book:
+            # Create a new blog post and add it
+
             db.session.add(book)
             db.session.commit()
 
             flash('Book successfully added!')
-        else:
-            flash('Error adding post. Please try again.')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding post: {str(e)}')
 
         return redirect(url_for('home'))
     # Render the form for GET requests
@@ -150,7 +151,7 @@ def delete_book(book_id):
         return redirect(url_for('home'))
     else:
         flash('Error deleting post. Please try again.')
-
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run()
