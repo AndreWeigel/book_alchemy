@@ -21,6 +21,6 @@ class Author(db.Model):
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     title = db.Column(db.String, nullable=False)
-    author_id = db.Column(db.Integer, db.ForeignKey('author.id'))
-    isbn = db.Column(db.String, nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('author.id'), nullable=False)
+    isbn = db.Column(db.String, unique=True, nullable=False)
     publication_year = db.Column(db.Integer, nullable=False)
